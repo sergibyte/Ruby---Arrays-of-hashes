@@ -1,0 +1,723 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Arrays of Hashes</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/simple.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<style type="text/css">
+			.reveal .footer{
+				position: absolute;
+				width: 100%;
+				bottom: 0;
+				font-size: 14px;
+			}
+			
+			.footer .fpiece{
+				width: 33%;
+				float: left;
+				padding: 10px;
+				box-sizing: border-box;
+			}
+
+			.footer .fpiece.center{
+				text-align: center;
+			}
+
+			.footer .fpiece.right{
+				text-align: right;
+			}
+
+			p.small{
+				font-size: 14px;
+			}
+			.reveal pre{
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h1>Working with Arrays of Hashes</h1>
+					<h5>Barcelona on Rails meetup</h5>
+				</section>
+				<section>
+					<h2>Why?</h2>
+					<ul>
+						<li class="fragment">Getting data from APIs</li>
+						<li class="fragment">Building APIs to deliver data</li>
+						<li class="fragment">Simplify SQL queries</li>
+					</ul>
+				</section>
+				<section>
+					<h3>Example of a Hash</h3>
+					<h5>In JSON notation</h5>
+					<pre><code class="json">
+{
+	"gender":"male",
+	"name":{
+		"title":"mr",
+		"first":"kaya",
+		"last":"köylüoğlu"
+	},
+	"location":{
+		"street":"1756 fatih sultan mehmet cd",
+		"city":"bayburt",
+		"state":"van",
+		"postcode":82603
+	},
+	"email":"kaya.köylüoğlu@example.com",
+	"login":{
+		"username":"smallduck449",
+		"password":"moritz","salt":"4OThAk5p",
+		"md5":"21afb8ed0d1113d7f65c05b693696c59",
+		"sha1":"8eb64b2242bd6c375bd10f4ffc886e60160452e4",
+		"sha256":"aa2cadb8395e8f90e53a83b98ec2273a8bc862889f10ea203fcd37847d4a8a68"
+	},
+	"registered":1345643832,
+	"dob":1245305041,
+	"phone":"(736)-954-6900",
+	"cell":"(905)-844-2623",
+	"id":{
+		"name":"",
+		"value":null
+	},
+	"picture":{
+		"large":"https://randomuser.me/api/portraits/men/71.jpg",
+		"medium":"https://randomuser.me/api/portraits/med/men/71.jpg",
+		"thumbnail":"https://randomuser.me/api/portraits/thumb/men/71.jpg"
+	},
+	"nat":"TR"
+}
+						</code></pre>
+					<p class="small">Generated from <a href="https://randomuser.me" target="_blank">randomuser.me API</a></p>
+				</section>
+				<section>
+					<h3>Getting an array of Hashes</h3>
+					<p>We call the URL <a href="https://randomuser.me/api?results=50" target="_blank">https://randomuser.me/api?results=50</a></p>
+					<div class="fragment">
+						<pre><code class="bash">
+{
+	"results": [ ...Array of Hashes here... ],
+	"info" : ... some other info about data ...
+}
+						</code>
+					</pre>
+				</section>
+				<section>
+					<section>
+						<h3>From JSON string</h3>
+						<h5>turning a JSON string into an object and counting the elements in it</h5>
+							<pre><code class="ruby">
+#script1.rb
+require 'json'
+file = File.open("apiresults.json", "rb")
+contents = file.read
+
+jsonobject = JSON.parse contents
+arrayofhashes = jsonobject["results"]
+
+puts arrayofhashes.count
+								</code></pre>
+						
+					</section>
+					<section>
+						<div>
+							<pre><code class="markdown">
+$ ruby script1.rb
+> 50
+							</code></pre>
+						</div>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>To JSON</h3>
+						<h5>Turning an actual array of Hashes into a string with JSON notation</h5>
+						<pre><code class="ruby">
+#script2.rb
+require 'json'
+
+people = Array.new
+
+person1 = Hash.new
+person2 = Hash.new
+
+person1["name"] = "John"
+person1["surname"] = "Doe"
+people.push person1
+
+person2["name"] = "Jane"
+person2["surname"] = "Smith"
+people.push person2
+
+jsonstring = people.to_json
+
+puts jsonstring
+						</code></pre>
+					</section>
+					<section>
+							<pre><code class="markdown">
+$ ruby script2.rb
+> [{"name":"John","surname":"Doe"},{"name":"Jane","surname":"Smith"}]
+							</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Select</h3>
+						<h5>Selecting users by gender</h5>
+						<pre><code class="ruby">
+#script3.rb
+require 'json'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+onlymales = arrayofhashes.select{ |thehash| thehash["gender"] == 'male' }
+
+puts "There are #{arrayofhashes.count} users"
+puts "There are #{onlymales.count} males"
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="markdown">
+$ ruby script3.rb
+> There are 50 users
+> There are 27 males
+						</code></pre>
+					</section>
+					<section>
+						<h3>Select!</h3>
+						<h5>Adding "!" applies the operation to the actual array instead of returning a different one</h5>
+						<pre><code class="ruby">
+#script4.rb
+require 'json'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+arrayofhashes.select!{ |thehash| thehash["gender"] == 'male' }
+
+puts "There are #{arrayofhashes.count} male users"
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="markdown">
+$ruby script4.rb
+> There are 27 male users
+						</code></pre>
+					</section>
+					<section>
+						<h3>Complex selects</h3>
+						<h5>Making complex operations in order to select people born on Monday</h5>
+						<pre><code>
+#script5.rb
+require 'json'
+require 'date'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+mondayborn = arrayofhashes.select do |thehash|
+	dob = DateTime.strptime(thehash["dob"].to_s,'%s')
+	if dob.wday == 1
+		isMonday = true
+	else
+		isMonday = false
+	end
+
+	isMonday
+end
+
+puts "There are #{mondayborn.count} users born in a Monday"
+puts mondayborn.first["dob"].to_s + " - " + DateTime.strptime(mondayborn.first["dob"].to_s,'%s').strftime("%+")
+
+						</code></pre>
+					</section>
+					<section>
+						<pre><code>
+$ ruby script5.rb
+> There are 9 users born in a Monday
+> 846489535 - Mon Oct 28 07:58:55 +00:00 1996
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Map</h3>
+						<h5>Mapping the data into an Array of values</h5>
+						<pre><code class="ruby">
+#script6.rb
+require 'json'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+firstnames = arrayofhashes.map{ |person| person["name"]["first"] }
+
+puts firstnames
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="markdown">
+$ ruby script6.rb
+rasmus
+addison
+jill
+charlotte
+jacob
+viljami
+jacob
+manuel
+ümit
+yan
+joann
+benjamin
+afet
+volkan
+misty
+حسین
+roman
+roméo
+charles
+clídio
+jeremiah
+elbertus
+cesar
+luisa
+kimberly
+eugene
+vilho
+joel
+katie
+harold
+jacinta
+bruce
+mathilde
+léonie
+daniel
+ritthy
+annie
+vicenta
+brittany
+johnny
+tracey
+felix
+olivia
+rodrigo
+barış
+lena
+adèle
+laurine
+jeanne
+lydia
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Sort_by</h3>
+						<h5>Sorting an array by a value associated to a key. Date registered</h5>
+						<pre><code class="ruby">
+#script7.rb
+require 'json'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+arrayofhashes.sort_by!{ |thehash| thehash["registered"] }
+
+arrayofhashes.each do |u|
+	puts u["registered"]
+end
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="markdown"> 
+$ ruby script7.rb
+921143768
+933542996
+936159408
+944306824
+947733935
+953326415
+954336160
+962050453
+983606907
+992142783
+1003862742
+1006047997
+1007891146
+1012104134
+1019973568
+1042161318
+1050140720
+1053206536
+1055650879
+1061498048
+1074797328
+1078143187
+1097102245
+1097159610
+1114472735
+1115864433
+1126005653
+1172389801
+1176783890
+1180045155
+1196707249
+1197458141
+1215905254
+1224923826
+1253427307
+1256589624
+1259483610
+1265237700
+1288802190
+1305470134
+1318133973
+1338934133
+1342874723
+1344585187
+1348834633
+1356240608
+1391759531
+1400391598
+1411809695
+1422089157
+						</code></pre>
+					</section>
+					<section>
+						<h3>Sort</h3>
+						<h5>Using the <em>spaceship</em> operator <=> </h5>
+						<pre><code class="ruby">
+#script8.rb
+require 'json'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+arrayofhashes.sort!{ |a,b| a["name"]["last"] <=> b["name"]["last"] }
+
+arrayofhashes.each do |u|
+	puts u["name"]["last"]
+end
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="markdown">
+$ ruby script8.rb
+adan
+bates
+blanchard
+boorsma
+bouchard
+brar
+brooks
+brunet
+chevalier
+cooper
+delgado
+douglas
+durak
+duval
+döring
+gil
+guillot
+jimenez
+kavaklıoğlu
+kivisto
+kopp
+lepisto
+long
+lord
+martinez
+may
+morgan
+murray
+neva
+novaes
+oliver
+owens
+peters
+picard
+pietila
+poçan
+schmitt
+silva
+smith
+steward
+teixeira
+tuenter
+turner
+vranken
+wainio
+washington
+wells
+ylitalo
+zimmer
+محمدخان
+						</code></pre>
+					</section>
+					<section>
+						<h3>Reverse sort</h3>
+						<h5>Getting the array in reverse order</h5>
+						<pre><code class="ruby">
+#script9.rb
+require 'json'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+arrayofhashes.sort!{ |a,b| b["name"]["last"] <=> a["name"]["last"] }
+
+arrayofhashes.each do |u|
+	puts u["name"]["last"]
+end
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="markdown">
+$ ruby script9.rb
+محمدخان
+zimmer
+ylitalo
+wells
+washington
+wainio
+vranken
+turner
+tuenter
+teixeira
+steward
+smith
+silva
+schmitt
+poçan
+pietila
+picard
+peters
+owens
+oliver
+novaes
+neva
+murray
+morgan
+may
+martinez
+lord
+long
+lepisto
+kopp
+kivisto
+kavaklıoğlu
+jimenez
+guillot
+gil
+döring
+duval
+durak
+douglas
+delgado
+cooper
+chevalier
+brunet
+brooks
+brar
+bouchard
+boorsma
+blanchard
+bates
+adan
+						</code></pre>
+					</section>
+					<section>
+						<h3>Complex sort</h3>
+						<h5>Establishing our method to sort the data. By Birth date.</h5>
+						<pre><code class="ruby">
+#script10.rb
+require 'json'
+require 'date'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+arrayofhashes.sort! do |a,b|
+	a_dob = DateTime.strptime(a["dob"].to_s,'%s')
+	b_dob = DateTime.strptime(b["dob"].to_s,'%s')
+
+	comp = a_dob.mon <=> b_dob.mon	
+
+	if comp == 0
+		comp = a_dob.day <=> b_dob.mday
+	end
+
+	comp
+end
+
+arrayofhashes.each do |u|
+	puts DateTime.strptime(u["dob"].to_s,'%s').strftime("%d %b %Y")
+end
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="markdown">
+$ruby script10.rb
+19 Jan 1984
+23 Jan 1986
+24 Jan 1978
+05 Feb 1999
+06 Feb 2012
+10 Feb 1997
+12 Feb 1973
+15 Feb 1995
+28 Feb 1993
+28 Feb 1983
+01 Mar 1981
+08 Mar 1974
+10 Mar 2000
+20 Mar 1981
+20 Mar 1974
+23 Mar 2004
+28 Mar 2003
+09 Apr 2007
+12 Apr 1983
+14 Apr 1971
+17 Apr 1983
+24 Apr 1995
+26 Apr 2004
+08 May 1993
+08 May 2008
+24 May 2002
+05 Jun 1997
+14 Jun 1997
+06 Jul 2012
+10 Jul 1980
+11 Jul 1976
+28 Jul 2014
+31 Jul 2005
+15 Aug 1999
+16 Aug 2011
+20 Aug 2003
+20 Aug 2008
+14 Sep 1996
+21 Sep 1980
+04 Oct 2000
+08 Oct 2010
+10 Oct 1981
+19 Oct 1989
+26 Oct 1995
+28 Oct 1996
+30 Oct 2009
+02 Nov 1993
+19 Nov 1996
+23 Nov 2004
+28 Dec 1989
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Collect</h3>
+						<h5>Getting the data and adding our stuff to it. Timestamp added to DB</h5>
+						<pre><code class="ruby">
+#script10.rb
+require 'json'
+require 'date'
+file = File.open("apiresults.json", "rb")
+arrayofhashes = JSON.parse(file.read)["results"]
+
+arrayofhashes.collect { |thehash|  thehash["addedToDB"] = Time.now }
+
+puts arrayofhashes.first
+						</code></pre>
+					</section>
+					<section>
+						<pre><code class="ruby">
+{
+"gender"=>"male",
+"name"=>{ 
+	"title"=>"mr", 
+	"first"=>"rasmus", 
+	"last"=>"kivisto"
+	},
+"location"=>{
+	"street"=>"5731 fredrikinkatu",
+	"city"=>"sastamala",
+	"state"=>"åland",
+	"postcode"=>56788
+}, 
+"email"=>"rasmus.kivisto@example.com",
+"login"=>{
+	"username"=>"redgoose892",
+	"password"=>"reason",
+	"salt"=>"dQkNDMrn",
+	"md5"=>"93f2e2c86204f6803ffc05d4d8530be0",
+	"sha1"=>"b5b8cdef968c3e4722604e2a2c26d07b10f1e6b1",
+	"sha256"=>"31618d83c8c9abb5cee3248d37ac2abaf586b13a5170836fead81703c509d555"
+	},
+"registered"=>1197458141,
+"dob"=>1219227520,
+"phone"=>"07-599-929",
+"cell"=>"044-226-29-76",
+"id"=>{
+	"name"=>"HETU", "value"=>"48162027-O"
+	},
+"picture"=>{
+	"large"=>"https://randomuser.me/api/portraits/men/36.jpg",
+	"medium"=>"https://randomuser.me/api/portraits/med/men/36.jpg",
+	"thumbnail"=>"https://randomuser.me/api/portraits/thumb/men/36.jpg"
+	},
+"nat"=>"FI",
+"addedToDB"=>2016-07-20 22:49:25 +0200
+}
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<h3>More info...</h3>
+					<a href="http://ruby-doc.org/core-2.3.1/Array.html" target="_blank">http://ruby-doc.org/core-2.3.1/Array.html</a><br>
+					<a href="http://ruby-doc.org/core-2.3.1/Hash.html" target="_blank">http://ruby-doc.org/core-2.3.1/Hash.html</a>
+				</section>
+				<section>
+					<h1>THE END</h1>
+
+				</section>
+			</div>
+			<div class="footer">
+				<div class="fpiece">Working with Arrays of Hashes</div>
+				<div class="fpiece center">Sergi Pedraza</div>
+				<div class="fpiece right">@sergibyte</div>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
